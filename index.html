@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -67,60 +67,41 @@
       overflow: hidden;
     }
 
-    /* Top Title Overlay Patch - Replaces "AiCE" with Selected Program Name & Count */
+    /* Seamless Title Overlay Patch */
     .title-patch {
       position: absolute;
-      top: 118px;
-      left: 140px;
-      width: 720px;
-      height: 38px;
-      background-color: #171d3d; /* Matches graphic background blue */
+      top: 62px;
+      left: 160px;
+      width: 680px;
+      height: 36px;
+      background-color: #1a1e43;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .card-title-text {
-      font-size: 22px;
+      font-size: 21px;
       font-weight: 800;
       color: #ffcc00;
       letter-spacing: 0.5px;
     }
 
-    /* Footer Text Patch - Replaces bottom () cleanly */
-    .footer-patch {
-      position: absolute;
-      bottom: 58px;
-      left: 200px;
-      width: 600px;
-      height: 34px;
-      background-color: #171d3d;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .footer-text {
-      font-size: 18px;
-      font-weight: 800;
-      color: #ffcc00;
-    }
-
-    /* Grid container for student pill rows */
+    /* Grid container - Rank 1 starts at Badge 1 */
     .grid-container {
       position: absolute;
-      top: 312px;
-      left: 128px;
-      width: 760px;
+      top: 162px;
+      left: 110px;
+      width: 790px;
       display: flex;
-      gap: 40px;
+      gap: 55px;
     }
 
     .column {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 5.8px;
+      gap: 5px;
     }
 
     /* Left Column Row Items */
@@ -129,7 +110,7 @@
       align-items: center;
       justify-content: space-between;
       height: 22px;
-      padding: 0 16px 0 10px;
+      padding: 0 12px 0 5px;
     }
 
     /* Right Column Row Items - Shifted right past yellow badges 11-14 */
@@ -139,7 +120,7 @@
       justify-content: space-between;
       height: 22px;
       padding-left: 48px;
-      padding-right: 16px;
+      padding-right: 12px;
     }
 
     .student-name {
@@ -150,7 +131,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 180px;
+      max-width: 190px;
     }
 
     .class-tag {
@@ -159,8 +140,30 @@
       color: #00ff88;
       white-space: nowrap;
     }
+
+    /* Footer Text Patch */
+    .footer-patch {
+      position: absolute;
+      bottom: 48px;
+      left: 220px;
+      width: 560px;
+      height: 32px;
+      background-color: #1a1e43;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .footer-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffcc00;
+    }
   </style>
+
+  <!-- HTML2Canvas & SheetJS Excel Parser Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -176,14 +179,14 @@
       <option value="Freelancer Academy">Freelancer Academy</option>
     </select>
 
-    <label for="csvFileInput">📁 Upload CSV Sheet:</label>
-    <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
+    <label for="excelFileInput">📊 Upload Excel (.xlsx):</label>
+    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)">
 
     <button onclick="downloadImage()">📸 Download Image (PNG)</button>
   </div>
 
   <div class="card" id="leaderboardCard">
-    <!-- Clean Title Overlay -->
+    <!-- Top Title Patch -->
     <div class="title-patch">
       <div class="card-title-text" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
     </div>
@@ -194,14 +197,13 @@
       <div class="column" id="rightCol"></div>
     </div>
 
-    <!-- Dynamic Footer Overlay -->
+    <!-- Footer Title Patch -->
     <div class="footer-patch">
       <div class="footer-text" id="footerText">Who will climb into the top 14 next?</div>
     </div>
   </div>
 
   <script>
-    // Default data store
     let programData = {
       "AiCE": [
         { name: "Amanuel Lulie W", class: "AICE-6_rolling" },
@@ -221,46 +223,49 @@
       ]
     };
 
-    // CSV File Upload Handler
-    function handleCSVUpload(event) {
+    // Reads Excel (.xlsx / .xls) and CSV sheets directly
+    function handleExcelUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(e) {
-        const text = e.target.result;
-        parseCSVData(text);
-      };
-      reader.readAsText(file);
-    }
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Read first sheet
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-    function parseCSVData(csvText) {
-      const lines = csvText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-      if (lines.length < 2) return;
+        if (jsonData.length < 2) return;
 
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
-      
-      let nameIdx = headers.findIndex(h => h.includes('name') || h.includes('student'));
-      let statusIdx = headers.findIndex(h => h.includes('status') || h.includes('class') || h.includes('code'));
+        const headers = jsonData[0].map(h => String(h || '').trim().toLowerCase());
+        
+        let nameIdx = headers.findIndex(h => h.includes('name') || h.includes('student'));
+        let statusIdx = headers.findIndex(h => h.includes('status') || h.includes('class') || h.includes('code') || h.includes('cohort'));
 
-      if (nameIdx === -1) nameIdx = 0;
-      if (statusIdx === -1) statusIdx = 1;
+        if (nameIdx === -1) nameIdx = 0;
+        if (statusIdx === -1) statusIdx = 1;
 
-      const uploadedStudents = [];
-      for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',').map(cell => cell.trim().replace(/^["']|["']$/g, ''));
-        if (row[nameIdx]) {
-          uploadedStudents.push({
-            name: row[nameIdx],
-            class: row[statusIdx] || ''
-          });
+        const uploadedStudents = [];
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (row && row[nameIdx]) {
+            uploadedStudents.push({
+              name: String(row[nameIdx]).trim(),
+              class: row[statusIdx] ? String(row[statusIdx]).trim() : ''
+            });
+          }
         }
-      }
 
-      const selectedProg = document.getElementById("programSelect").value;
-      programData[selectedProg] = uploadedStudents;
-      renderLeaderboard();
-      alert(`Successfully loaded ${uploadedStudents.length} students for ${selectedProg}!`);
+        const selectedProg = document.getElementById("programSelect").value;
+        programData[selectedProg] = uploadedStudents;
+        renderLeaderboard();
+        alert(`Successfully loaded ${uploadedStudents.length} students from Excel for ${selectedProg}!`);
+      };
+
+      reader.readAsArrayBuffer(file);
     }
 
     function renderLeaderboard() {
@@ -268,7 +273,6 @@
       const students = programData[selectedProg] || [];
       const count = students.length;
 
-      // Update Card Titles dynamically for ANY program
       document.getElementById("cardTitle").innerText = `${selectedProg} Leaderboard - Meet the Current Top ${count}!`;
       document.getElementById("footerText").innerText = `Who will climb into the top ${count} next?`;
 
