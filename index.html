@@ -53,7 +53,7 @@
       border-color: #2e9d45;
     }
 
-    /* Graphic Leaderboard Canvas */
+    /* Graphic Canvas */
     .card {
       width: 1000px;
       height: 562px;
@@ -66,60 +66,49 @@
       overflow: hidden;
     }
 
-    /* Top Title Patch - Seamlessly replaces Program Name & Top () Number */
-    .title-patch {
+    /* Dynamic Number filling the top title () */
+    .top-count-number {
       position: absolute;
-      top: 110px;
-      left: 150px;
-      width: 700px;
-      height: 48px;
-      background-color: #171d3d; /* Matches dark blue card background */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .card-title-overlay {
+      top: 67px;
+      right: 215px;
       font-size: 22px;
       font-weight: 800;
       color: #ffcc00;
-      letter-spacing: 0.5px;
     }
 
-    /* Grid layout aligned with Rank 1 starting at top slot */
+    /* Dynamic Number filling the footer () */
+    .footer-count-number {
+      position: absolute;
+      bottom: 48px;
+      left: 622px;
+      font-size: 19px;
+      font-weight: 800;
+      color: #ffcc00;
+    }
+
+    /* Grid container - Exact top offset for Badge 1 */
     .grid-container {
       position: absolute;
-      top: 282px;
-      left: 128px;
-      width: 760px;
+      top: 162px;
+      left: 110px;
+      width: 790px;
       display: flex;
-      gap: 40px;
+      gap: 55px;
     }
 
     .column {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 5.6px;
+      gap: 5px;
     }
 
-    /* Left Column Item Alignment */
-    #leftCol .row-item {
+    .row-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 22.5px;
-      padding: 0 16px 0 10px;
-    }
-
-    /* Right Column Item Alignment - Shifted right to clear yellow badges 11-14 */
-    #rightCol .row-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 22.5px;
-      padding-left: 45px;
-      padding-right: 16px;
+      height: 22px;
+      padding: 0 12px 0 5px;
     }
 
     .student-name {
@@ -130,7 +119,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 180px;
+      max-width: 200px;
     }
 
     .class-tag {
@@ -138,25 +127,6 @@
       font-weight: 800;
       color: #00ff88;
       white-space: nowrap;
-    }
-
-    /* Bottom Footer Patch - Seamlessly replaces () with exact list count */
-    .footer-patch {
-      position: absolute;
-      bottom: 60px;
-      left: 200px;
-      width: 600px;
-      height: 36px;
-      background-color: #171d3d;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .footer-text {
-      font-size: 19px;
-      font-weight: 800;
-      color: #ffcc00;
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -179,20 +149,14 @@
   </div>
 
   <div class="card" id="leaderboardCard">
-    <!-- Dynamic Top Title Patch -->
-    <div class="title-patch">
-      <div class="card-title-overlay" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
-    </div>
-    
-    <!-- Student Grid Rows -->
+    <!-- Transparent dynamic numbers placed inside the template () -->
+    <div class="top-count-number" id="topCount">14</div>
+    <div class="footer-count-number" id="footerCount">14</div>
+
+    <!-- Student Grid starting at Rank 1 slot -->
     <div class="grid-container">
       <div class="column" id="leftCol"></div>
       <div class="column" id="rightCol"></div>
-    </div>
-
-    <!-- Dynamic Footer Text Patch -->
-    <div class="footer-patch">
-      <div class="footer-text" id="footerText">Who will climb into the top 14 next?</div>
     </div>
   </div>
 
@@ -267,9 +231,9 @@
       const students = programData[selectedProg] || [];
       const count = students.length;
 
-      // Automatically inserts Program Name & exact list count
-      document.getElementById("cardTitle").innerText = `${selectedProg} Leaderboard - Meet the Current Top ${count}!`;
-      document.getElementById("footerText").innerText = `Who will climb into the top ${count} next?`;
+      // Update parentheses numbers
+      document.getElementById("topCount").innerText = count;
+      document.getElementById("footerCount").innerText = count;
 
       const leftCol = document.getElementById("leftCol");
       const rightCol = document.getElementById("rightCol");
