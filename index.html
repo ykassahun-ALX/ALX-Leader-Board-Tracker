@@ -70,10 +70,10 @@
     /* Seamless Title Overlay Patch */
     .title-patch {
       position: absolute;
-      top: 62px;
+      top: 135px;
       left: 160px;
       width: 680px;
-      height: 36px;
+      height: 38px;
       background-color: #1a1e43;
       display: flex;
       align-items: center;
@@ -87,21 +87,21 @@
       letter-spacing: 0.5px;
     }
 
-    /* Grid container - Rank 1 starts at Badge 1 */
+    /* Grid container - Aligns precisely inside dark pill slots */
     .grid-container {
       position: absolute;
-      top: 162px;
-      left: 110px;
-      width: 790px;
+      top: 312px;
+      left: 128px;
+      width: 760px;
       display: flex;
-      gap: 55px;
+      gap: 40px;
     }
 
     .column {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 5.8px;
     }
 
     /* Left Column Row Items */
@@ -110,7 +110,7 @@
       align-items: center;
       justify-content: space-between;
       height: 22px;
-      padding: 0 12px 0 5px;
+      padding: 0 16px 0 10px;
     }
 
     /* Right Column Row Items - Shifted right past yellow badges 11-14 */
@@ -119,8 +119,8 @@
       align-items: center;
       justify-content: space-between;
       height: 22px;
-      padding-left: 48px;
-      padding-right: 12px;
+      padding-left: 52px;
+      padding-right: 16px;
     }
 
     .student-name {
@@ -131,7 +131,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 190px;
+      max-width: 180px;
     }
 
     .class-tag {
@@ -144,7 +144,7 @@
     /* Footer Text Patch */
     .footer-patch {
       position: absolute;
-      bottom: 48px;
+      bottom: 80px;
       left: 220px;
       width: 560px;
       height: 32px;
@@ -161,7 +161,7 @@
     }
   </style>
 
-  <!-- HTML2Canvas & SheetJS Excel Parser Libraries -->
+  <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -186,18 +186,15 @@
   </div>
 
   <div class="card" id="leaderboardCard">
-    <!-- Top Title Patch -->
     <div class="title-patch">
       <div class="card-title-text" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
     </div>
 
-    <!-- Student Grid -->
     <div class="grid-container">
       <div class="column" id="leftCol"></div>
       <div class="column" id="rightCol"></div>
     </div>
 
-    <!-- Footer Title Patch -->
     <div class="footer-patch">
       <div class="footer-text" id="footerText">Who will climb into the top 14 next?</div>
     </div>
@@ -223,7 +220,6 @@
       ]
     };
 
-    // Reads Excel (.xlsx / .xls) and CSV sheets directly
     function handleExcelUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -233,7 +229,6 @@
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        // Read first sheet
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -243,26 +238,48 @@
         const headers = jsonData[0].map(h => String(h || '').trim().toLowerCase());
         
         let nameIdx = headers.findIndex(h => h.includes('name') || h.includes('student'));
-        let statusIdx = headers.findIndex(h => h.includes('status') || h.includes('class') || h.includes('code') || h.includes('cohort'));
+        let statusIdx = headers.findIndex(h => h.includes('status') || h.includes('class') || h.includes('code'));
+        let progIdx = headers.findIndex(h => h.includes('program') || h.includes('track') || h.includes('course'));
 
         if (nameIdx === -1) nameIdx = 0;
         if (statusIdx === -1) statusIdx = 1;
 
-        const uploadedStudents = [];
+        const uploadedByProg = {};
+
         for (let i = 1; i < jsonData.length; i++) {
           const row = jsonData[i];
           if (row && row[nameIdx]) {
-            uploadedStudents.push({
+            const progName = (progIdx !== -1 && row[progIdx]) ? String(row[progIdx]).trim() : document.getElementById("programSelect").value;
+            if (!uploadedByProg[progName]) uploadedByProg[progName] = [];
+            
+            uploadedByProg[progName].push({
               name: String(row[nameIdx]).trim(),
               class: row[statusIdx] ? String(row[statusIdx]).trim() : ''
             });
           }
         }
 
-        const selectedProg = document.getElementById("programSelect").value;
-        programData[selectedProg] = uploadedStudents;
+        // Update programData store
+        Object.assign(programData, uploadedByProg);
+
+        // Update dropdown menu options dynamically
+        const selectElem = document.getElementById("programSelect");
+        Object.keys(uploadedByProg).forEach(progKey => {
+          let exists = Array.from(selectElem.options).some(opt => opt.value === progKey);
+          if (!exists) {
+            const opt = document.createElement("option");
+            opt.value = progKey;
+            opt.innerText = progKey;
+            selectElem.appendChild(opt);
+          }
+        });
+
+        // Set active selection to first uploaded program
+        const firstUploaded = Object.keys(uploadedByProg)[0];
+        if (firstUploaded) selectElem.value = firstUploaded;
+
         renderLeaderboard();
-        alert(`Successfully loaded ${uploadedStudents.length} students from Excel for ${selectedProg}!`);
+        alert(`Successfully imported data from Excel!`);
       };
 
       reader.readAsArrayBuffer(file);
