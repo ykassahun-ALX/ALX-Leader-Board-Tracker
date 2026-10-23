@@ -57,7 +57,7 @@
     .card {
       width: 1000px;
       height: 562px;
-      background-image: url('Leaderboard Addis.jpg');
+      background-image: url('template.png');
       background-size: cover;
       background-position: center;
       position: relative;
@@ -149,11 +149,9 @@
   </div>
 
   <div class="card" id="leaderboardCard">
-    <!-- Transparent dynamic numbers placed inside the template () -->
     <div class="top-count-number" id="topCount">14</div>
     <div class="footer-count-number" id="footerCount">14</div>
 
-    <!-- Student Grid starting at Rank 1 slot -->
     <div class="grid-container">
       <div class="column" id="leftCol"></div>
       <div class="column" id="rightCol"></div>
@@ -231,7 +229,6 @@
       const students = programData[selectedProg] || [];
       const count = students.length;
 
-      // Update parentheses numbers
       document.getElementById("topCount").innerText = count;
       document.getElementById("footerCount").innerText = count;
 
