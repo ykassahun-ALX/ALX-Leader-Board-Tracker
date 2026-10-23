@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -23,6 +23,7 @@
 
     .controls {
       display: flex;
+      flex-wrap: wrap;
       gap: 15px;
       align-items: center;
       margin-bottom: 25px;
@@ -37,8 +38,8 @@
       color: #00ff88;
     }
 
-    .controls select, .controls button {
-      padding: 8px 16px;
+    .controls select, .controls button, .controls input[type="file"] {
+      padding: 8px 14px;
       border-radius: 6px;
       border: 1px solid #30363d;
       background: #21262d;
@@ -66,26 +67,43 @@
       overflow: hidden;
     }
 
-    /* Fits precisely inside top title brackets () */
-    .top-count-number {
+    /* Top Title Overlay Patch - Replaces "AiCE" with Selected Program Name & Count */
+    .title-patch {
       position: absolute;
-      top: 125px;
-      left: 673px;
-      font-size: 21px;
-      font-weight: 800;
-      color: #ffcc00;
-      line-height: 1;
+      top: 118px;
+      left: 140px;
+      width: 720px;
+      height: 38px;
+      background-color: #171d3d; /* Matches graphic background blue */
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    /* Fits precisely inside bottom footer brackets () */
-    .footer-count-number {
-      position: absolute;
-      top: 480px;
-      left: 512px;
-      font-size: 19px;
+    .card-title-text {
+      font-size: 22px;
       font-weight: 800;
       color: #ffcc00;
-      line-height: 1;
+      letter-spacing: 0.5px;
+    }
+
+    /* Footer Text Patch - Replaces bottom () cleanly */
+    .footer-patch {
+      position: absolute;
+      bottom: 58px;
+      left: 200px;
+      width: 600px;
+      height: 34px;
+      background-color: #171d3d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .footer-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffcc00;
     }
 
     /* Grid container for student pill rows */
@@ -147,7 +165,7 @@
 <body>
 
   <div class="controls">
-    <label for="programSelect">Select Program Tab:</label>
+    <label for="programSelect">Program:</label>
     <select id="programSelect" onchange="renderLeaderboard()">
       <option value="AiCE">AiCE</option>
       <option value="Data Analytics">Data Analytics</option>
@@ -158,22 +176,33 @@
       <option value="Freelancer Academy">Freelancer Academy</option>
     </select>
 
+    <label for="csvFileInput">📁 Upload CSV Sheet:</label>
+    <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)">
+
     <button onclick="downloadImage()">📸 Download Image (PNG)</button>
   </div>
 
   <div class="card" id="leaderboardCard">
-    <!-- Dynamic numbers placed exactly inside () brackets -->
-    <div class="top-count-number" id="topCount"></div>
-    <div class="footer-count-number" id="footerCount"></div>
+    <!-- Clean Title Overlay -->
+    <div class="title-patch">
+      <div class="card-title-text" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
+    </div>
 
+    <!-- Student Grid -->
     <div class="grid-container">
       <div class="column" id="leftCol"></div>
       <div class="column" id="rightCol"></div>
     </div>
+
+    <!-- Dynamic Footer Overlay -->
+    <div class="footer-patch">
+      <div class="footer-text" id="footerText">Who will climb into the top 14 next?</div>
+    </div>
   </div>
 
   <script>
-    const programData = {
+    // Default data store
+    let programData = {
       "AiCE": [
         { name: "Amanuel Lulie W", class: "AICE-6_rolling" },
         { name: "Asmare Getie", class: "AICE-6_rolling" },
@@ -189,65 +218,59 @@
         { name: "Natnael Fantaw", class: "AICE-5_rolling" },
         { name: "Rahel Asres", class: "AICE-5_rolling" },
         { name: "Zeamanuel Lega", class: "AICE-5_rolling" }
-      ],
-      "Data Analytics": [
-        { name: "BIRUK FEKADU", class: "DA-4_rolling" },
-        { name: "MERON GETACHEW", class: "DA-4_rolling" },
-        { name: "YONATAN TESFAYE", class: "DA-3_rolling" },
-        { name: "SEBLE WONDIMU", class: "DA-3_rolling" },
-        { name: "ABEBE BIKILA", class: "DA-2_rolling" },
-        { name: "MARTA KASSA", class: "DA-2_rolling" },
-        { name: "DAWIT GIRMA", class: "DA-2_rolling" },
-        { name: "HANNA MELESE", class: "DA-1_rolling" },
-        { name: "SAMUEL BERHANU", class: "DA-1_rolling" },
-        { name: "KALEAB KASSAHUN", class: "DA-1_rolling" },
-        { name: "TSION WORKU", class: "DA-1_rolling" },
-        { name: "EPHREM BESEAT", class: "DA-1_rolling" }
-      ],
-      "Graphic Design": [
-        { name: "DAWIT LEUL", class: "GD-3_rolling" },
-        { name: "HELEN SOLOMON", class: "GD-3_rolling" },
-        { name: "EPHREM BESEAT", class: "GD-2_rolling" },
-        { name: "BETHEL TADDESE", class: "GD-2_rolling" },
-        { name: "TSION WORKU", class: "GD-1_rolling" },
-        { name: "YOHANNES TADESSE", class: "GD-1_rolling" },
-        { name: "NEBIYU MOGES", class: "GD-1_rolling" }
-      ],
-      "Virtual Assistant": [
-        { name: "SOLIYANA SEIFU", class: "VA-2_rolling" },
-        { name: "SOSINA YEVELO", class: "VA-2_rolling" },
-        { name: "KALEAB TEKLE", class: "VA-1_rolling" },
-        { name: "MIHRET MOGES", class: "VA-1_rolling" },
-        { name: "HABIBA AHMED", class: "VA-1_rolling" }
-      ],
-      "Data Science": [
-        { name: "TEWODROS BIKILA", class: "DS-2_rolling" },
-        { name: "KALEAB HAILE", class: "DS-2_rolling" },
-        { name: "SARA TESFAYE", class: "DS-1_rolling" },
-        { name: "BETSINAT KASSA", class: "DS-1_rolling" }
-      ],
-      "Founders Academy": [
-        { name: "YONAS ALEMU", class: "FA-2_rolling" },
-        { name: "BETHLEHEM TEKLE", class: "FA-2_rolling" },
-        { name: "KIDUS DANIEL", class: "FA-1_rolling" },
-        { name: "FREHIWOT GETACHEW", class: "FA-1_rolling" }
-      ],
-      "Freelancer Academy": [
-        { name: "SAMIYA HASSEN", class: "FLA-2_rolling" },
-        { name: "EZRA WORKU", class: "FLA-2_rolling" },
-        { name: "LULIT BEKELE", class: "FLA-1_rolling" },
-        { name: "ABRAHAM TADESSE", class: "FLA-1_rolling" }
       ]
     };
+
+    // CSV File Upload Handler
+    function handleCSVUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        parseCSVData(text);
+      };
+      reader.readAsText(file);
+    }
+
+    function parseCSVData(csvText) {
+      const lines = csvText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length < 2) return;
+
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
+      
+      let nameIdx = headers.findIndex(h => h.includes('name') || h.includes('student'));
+      let statusIdx = headers.findIndex(h => h.includes('status') || h.includes('class') || h.includes('code'));
+
+      if (nameIdx === -1) nameIdx = 0;
+      if (statusIdx === -1) statusIdx = 1;
+
+      const uploadedStudents = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',').map(cell => cell.trim().replace(/^["']|["']$/g, ''));
+        if (row[nameIdx]) {
+          uploadedStudents.push({
+            name: row[nameIdx],
+            class: row[statusIdx] || ''
+          });
+        }
+      }
+
+      const selectedProg = document.getElementById("programSelect").value;
+      programData[selectedProg] = uploadedStudents;
+      renderLeaderboard();
+      alert(`Successfully loaded ${uploadedStudents.length} students for ${selectedProg}!`);
+    }
 
     function renderLeaderboard() {
       const selectedProg = document.getElementById("programSelect").value;
       const students = programData[selectedProg] || [];
       const count = students.length;
 
-      // Automatically updates the number inside brackets ()
-      document.getElementById("topCount").innerText = count;
-      document.getElementById("footerCount").innerText = count;
+      // Update Card Titles dynamically for ANY program
+      document.getElementById("cardTitle").innerText = `${selectedProg} Leaderboard - Meet the Current Top ${count}!`;
+      document.getElementById("footerText").innerText = `Who will climb into the top ${count} next?`;
 
       const leftCol = document.getElementById("leftCol");
       const rightCol = document.getElementById("rightCol");
