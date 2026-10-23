@@ -66,49 +66,60 @@
       overflow: hidden;
     }
 
-    /* Dynamic Number filling the top title () */
+    /* Placed inside the top title () */
     .top-count-number {
       position: absolute;
-      top: 67px;
-      right: 215px;
-      font-size: 22px;
+      top: 135px;
+      left: 772px;
+      font-size: 20px;
       font-weight: 800;
       color: #ffcc00;
     }
 
-    /* Dynamic Number filling the footer () */
+    /* Placed inside the footer () */
     .footer-count-number {
       position: absolute;
-      bottom: 48px;
-      left: 622px;
-      font-size: 19px;
+      bottom: 85px;
+      left: 568px;
+      font-size: 18px;
       font-weight: 800;
       color: #ffcc00;
     }
 
-    /* Grid container - Exact top offset for Badge 1 */
+    /* Grid container - Aligns perfectly with Rank 1 pill */
     .grid-container {
       position: absolute;
-      top: 162px;
-      left: 110px;
-      width: 790px;
+      top: 312px;
+      left: 128px;
+      width: 760px;
       display: flex;
-      gap: 55px;
+      gap: 40px;
     }
 
     .column {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 5.8px;
     }
 
-    .row-item {
+    /* Left Column Row Items */
+    #leftCol .row-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       height: 22px;
-      padding: 0 12px 0 5px;
+      padding: 0 16px 0 10px;
+    }
+
+    /* Right Column Row Items - Shifted right past yellow badges 11-14 */
+    #rightCol .row-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 22px;
+      padding-left: 48px;
+      padding-right: 16px;
     }
 
     .student-name {
@@ -119,7 +130,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 200px;
+      max-width: 180px;
     }
 
     .class-tag {
@@ -197,76 +208,3 @@
         { name: "YOHANNES TADESSE", class: "GD-1_rolling" },
         { name: "NEBIYU MOGES", class: "GD-1_rolling" }
       ],
-      "Virtual Assistant": [
-        { name: "SOLIYANA SEIFU", class: "VA-2_rolling" },
-        { name: "SOSINA YEVELO", class: "VA-2_rolling" },
-        { name: "KALEAB TEKLE", class: "VA-1_rolling" },
-        { name: "MIHRET MOGES", class: "VA-1_rolling" },
-        { name: "HABIBA AHMED", class: "VA-1_rolling" }
-      ],
-      "Data Science": [
-        { name: "TEWODROS BIKILA", class: "DS-2_rolling" },
-        { name: "KALEAB HAILE", class: "DS-2_rolling" },
-        { name: "SARA TESFAYE", class: "DS-1_rolling" },
-        { name: "BETSINAT KASSA", class: "DS-1_rolling" }
-      ],
-      "Founders Academy": [
-        { name: "YONAS ALEMU", class: "FA-2_rolling" },
-        { name: "BETHLEHEM TEKLE", class: "FA-2_rolling" },
-        { name: "KIDUS DANIEL", class: "FA-1_rolling" },
-        { name: "FREHIWOT GETACHEW", class: "FA-1_rolling" }
-      ],
-      "Freelancer Academy": [
-        { name: "SAMIYA HASSEN", class: "FLA-2_rolling" },
-        { name: "EZRA WORKU", class: "FLA-2_rolling" },
-        { name: "LULIT BEKELE", class: "FLA-1_rolling" },
-        { name: "ABRAHAM TADESSE", class: "FLA-1_rolling" }
-      ]
-    };
-
-    function renderLeaderboard() {
-      const selectedProg = document.getElementById("programSelect").value;
-      const students = programData[selectedProg] || [];
-      const count = students.length;
-
-      document.getElementById("topCount").innerText = count;
-      document.getElementById("footerCount").innerText = count;
-
-      const leftCol = document.getElementById("leftCol");
-      const rightCol = document.getElementById("rightCol");
-      leftCol.innerHTML = "";
-      rightCol.innerHTML = "";
-
-      students.forEach((student, idx) => {
-        const rank = idx + 1;
-        const rowHTML = `
-          <div class="row-item">
-            <div class="student-name">${student.name}</div>
-            <div class="class-tag">${student.class}</div>
-          </div>
-        `;
-
-        if (rank <= 10) {
-          leftCol.innerHTML += rowHTML;
-        } else {
-          rightCol.innerHTML += rowHTML;
-        }
-      });
-    }
-
-    function downloadImage() {
-      const card = document.getElementById("leaderboardCard");
-      const progName = document.getElementById("programSelect").value;
-      
-      html2canvas(card, { scale: 2 }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `${progName}_Leaderboard.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      });
-    }
-
-    renderLeaderboard();
-  </script>
-</body>
-</html>
