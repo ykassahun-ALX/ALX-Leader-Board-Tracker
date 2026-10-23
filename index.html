@@ -53,7 +53,7 @@
       border-color: #2e9d45;
     }
 
-    /* Leaderboard Card Container using your image as background */
+    /* Leaderboard Card Container using your background image */
     .card {
       width: 1000px;
       height: 562px;
@@ -66,29 +66,43 @@
       overflow: hidden;
     }
 
-    /* Positions text directly over the dark pill shapes */
+    /* Dynamic Title Text Overlay */
+    .card-title-overlay {
+      position: absolute;
+      top: 135px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffcc00;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    /* Precise Layout Grid for Pill Slots */
     .grid-container {
       position: absolute;
-      top: 162px;
-      left: 110px;
-      width: 790px;
+      top: 312px;
+      left: 128px;
+      width: 760px;
       display: flex;
-      gap: 55px;
+      gap: 72px;
     }
 
     .column {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 5.5px;
+      gap: 5.8px;
     }
 
     .row-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 25.5px;
-      padding: 0 12px 0 5px;
+      height: 22px;
+      padding: 0 18px 0 12px;
     }
 
     .student-name {
@@ -99,7 +113,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 210px;
+      max-width: 200px;
     }
 
     .class-tag {
@@ -120,6 +134,7 @@
       <option value="Data Analytics">Data Analytics</option>
       <option value="Graphic Design">Graphic Design</option>
       <option value="Virtual Assistant">Virtual Assistant</option>
+      <option value="Data Science">Data Science</option>
     </select>
 
     <button onclick="downloadImage()">📸 Download Image (PNG)</button>
@@ -127,6 +142,8 @@
 
   <!-- Graphic Leaderboard Card -->
   <div class="card" id="leaderboardCard">
+    <div class="card-title-overlay" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
+    
     <div class="grid-container">
       <div class="column" id="leftCol"></div>
       <div class="column" id="rightCol"></div>
@@ -134,8 +151,8 @@
   </div>
 
   <script>
-    // Exact student data from your sheet
-    const mockData = {
+    // Full Program Datasets
+    const programData = {
       "AiCE": [
         { name: "Amanuel Lulie W", class: "AICE-6_rolling" },
         { name: "Asmare Getie", class: "AICE-6_rolling" },
@@ -151,12 +168,50 @@
         { name: "Natnael Fantaw", class: "AICE-5_rolling" },
         { name: "Rahel Asres", class: "AICE-5_rolling" },
         { name: "Zeamanuel Lega", class: "AICE-5_rolling" }
+      ],
+      "Data Analytics": [
+        { name: "BIRUK FEKADU", class: "DA-4_rolling" },
+        { name: "MERON GETACHEW", class: "DA-4_rolling" },
+        { name: "YONATAN TESFAYE", class: "DA-3_rolling" },
+        { name: "SEBLE WONDIMU", class: "DA-3_rolling" },
+        { name: "ABEBE BIKILA", class: "DA-2_rolling" },
+        { name: "MARTA KASSA", class: "DA-2_rolling" },
+        { name: "DAWIT GIRMA", class: "DA-2_rolling" },
+        { name: "HANNA MELESE", class: "DA-1_rolling" },
+        { name: "SAMUEL BERHANU", class: "DA-1_rolling" },
+        { name: "KALEAB KASSAHUN", class: "DA-1_rolling" }
+      ],
+      "Graphic Design": [
+        { name: "DAWIT LEUL", class: "GD-3_rolling" },
+        { name: "HELEN SOLOMON", class: "GD-3_rolling" },
+        { name: "EPHREM BESEAT", class: "GD-2_rolling" },
+        { name: "BETHEL TADDESE", class: "GD-2_rolling" },
+        { name: "TSION WORKU", class: "GD-1_rolling" },
+        { name: "YOHANNES TADESSE", class: "GD-1_rolling" },
+        { name: "NEBIYU MOGES", class: "GD-1_rolling" }
+      ],
+      "Virtual Assistant": [
+        { name: "SOLIYANA SEIFU", class: "VA-2_rolling" },
+        { name: "SOSINA YEVELO", class: "VA-2_rolling" },
+        { name: "KALEAB TEKLE", class: "VA-1_rolling" },
+        { name: "MIHRET MOGES", class: "VA-1_rolling" },
+        { name: "HABIBA AHMED", class: "VA-1_rolling" }
+      ],
+      "Data Science": [
+        { name: "TEWODROS BIKILA", class: "DS-2_rolling" },
+        { name: "KALEAB HAILE", class: "DS-2_rolling" },
+        { name: "SARA TESFAYE", class: "DS-1_rolling" },
+        { name: "BETSINAT KASSA", class: "DS-1_rolling" }
       ]
     };
 
     function renderLeaderboard() {
       const selectedProg = document.getElementById("programSelect").value;
-      const students = mockData[selectedProg] || mockData["AiCE"];
+      const students = programData[selectedProg] || [];
+      const totalCount = students.length;
+
+      // Update Card Header Title dynamically
+      document.getElementById("cardTitle").innerText = `${selectedProg} Leaderboard - Meet the Current Top ${totalCount}!`;
 
       const leftCol = document.getElementById("leftCol");
       const rightCol = document.getElementById("rightCol");
@@ -192,6 +247,7 @@
       });
     }
 
+    // Initial render
     renderLeaderboard();
   </script>
 </body>
