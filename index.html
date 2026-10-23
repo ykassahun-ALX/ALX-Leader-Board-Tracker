@@ -53,7 +53,7 @@
       border-color: #2e9d45;
     }
 
-    /* Card Canvas */
+    /* Graphic Leaderboard Canvas */
     .card {
       width: 1000px;
       height: 562px;
@@ -66,27 +66,27 @@
       overflow: hidden;
     }
 
-    /* Top Patch - Erases baked-in title and replaces cleanly */
+    /* Top Title Patch - Seamlessly replaces Program Name & Top () Number */
     .title-patch {
       position: absolute;
-      top: 135px;
-      left: 200px;
-      width: 600px;
-      height: 38px;
-      background-color: #1a1e43; /* Matches upper background dark blue */
+      top: 110px;
+      left: 150px;
+      width: 700px;
+      height: 48px;
+      background-color: #171d3d; /* Matches dark blue card background */
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .card-title-overlay {
-      font-size: 21px;
+      font-size: 22px;
       font-weight: 800;
       color: #ffcc00;
       letter-spacing: 0.5px;
     }
 
-    /* Grid alignment for pill slots */
+    /* Grid layout aligned with Rank 1 starting at top slot */
     .grid-container {
       position: absolute;
       top: 282px;
@@ -103,7 +103,7 @@
       gap: 5.6px;
     }
 
-    /* Left Column Items */
+    /* Left Column Item Alignment */
     #leftCol .row-item {
       display: flex;
       align-items: center;
@@ -112,7 +112,7 @@
       padding: 0 16px 0 10px;
     }
 
-    /* Right Column Items - Shifted right so text sits AFTER badges 11-14 */
+    /* Right Column Item Alignment - Shifted right to clear yellow badges 11-14 */
     #rightCol .row-item {
       display: flex;
       align-items: center;
@@ -140,21 +140,21 @@
       white-space: nowrap;
     }
 
-    /* Footer Patch - Erases baked-in bottom text and replaces cleanly */
+    /* Bottom Footer Patch - Seamlessly replaces () with exact list count */
     .footer-patch {
       position: absolute;
-      bottom: 80px;
-      left: 230px;
-      width: 540px;
-      height: 32px;
-      background-color: #1a1e43;
+      bottom: 60px;
+      left: 200px;
+      width: 600px;
+      height: 36px;
+      background-color: #171d3d;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .footer-text {
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 800;
       color: #ffcc00;
     }
@@ -179,18 +179,18 @@
   </div>
 
   <div class="card" id="leaderboardCard">
-    <!-- Top Title Overlay Patch -->
+    <!-- Dynamic Top Title Patch -->
     <div class="title-patch">
       <div class="card-title-overlay" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
     </div>
     
-    <!-- Student Entries -->
+    <!-- Student Grid Rows -->
     <div class="grid-container">
       <div class="column" id="leftCol"></div>
       <div class="column" id="rightCol"></div>
     </div>
 
-    <!-- Bottom Footer Patch -->
+    <!-- Dynamic Footer Text Patch -->
     <div class="footer-patch">
       <div class="footer-text" id="footerText">Who will climb into the top 14 next?</div>
     </div>
@@ -267,6 +267,7 @@
       const students = programData[selectedProg] || [];
       const count = students.length;
 
+      // Automatically inserts Program Name & exact list count
       document.getElementById("cardTitle").innerText = `${selectedProg} Leaderboard - Meet the Current Top ${count}!`;
       document.getElementById("footerText").innerText = `Who will climb into the top ${count} next?`;
 
