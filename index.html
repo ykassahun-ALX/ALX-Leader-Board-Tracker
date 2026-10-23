@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALX Leaderboard Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0d1117;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 25px;
+      background: #161b22;
+      padding: 15px 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .controls label {
+      font-weight: 600;
+      color: #00ff88;
+    }
+
+    .controls select, .controls button {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .controls button:hover {
+      background: #238636;
+      border-color: #2e9d45;
+    }
+
+    /* Leaderboard Card Container matching 16:9 Aspect Ratio */
+    .card {
+      width: 1000px;
+      height: 562px;
+      background: linear-gradient(135deg, #1b023e 0%, #11287c 50%, #0c5770 100%);
+      border-radius: 12px;
+      padding: 30px 45px;
+      position: relative;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+
+    /* Top Header Section */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      color: #ffffff;
+    }
+
+    .main-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #00ff88;
+      text-align: center;
+      flex: 1;
+    }
+
+    /* Table Column Header Green Bar */
+    .column-headers {
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+      margin-bottom: 12px;
+    }
+
+    .header-bar {
+      flex: 1;
+      background: #00e676;
+      color: #0a192f;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      padding: 6px 0;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Grid Layout for Students */
+    .grid-container {
+      display: flex;
+      gap: 30px;
+    }
+
+    .column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .row-item {
+      display: flex;
+      align-items: center;
+      background: rgba(10, 25, 65, 0.85);
+      border-radius: 20px;
+      padding: 3px 12px;
+      height: 28px;
+      justify-content: space-between;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
