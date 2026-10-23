@@ -53,7 +53,7 @@
       border-color: #2e9d45;
     }
 
-    /* Leaderboard Card Container using your background image */
+    /* Leaderboard Card Container */
     .card {
       width: 1000px;
       height: 562px;
@@ -66,25 +66,32 @@
       overflow: hidden;
     }
 
-    /* Dynamic Title Text Overlay */
-    .card-title-overlay {
+    /* Clean Overlay covering the baked-in title */
+    .title-patch {
       position: absolute;
-      top: 135px;
-      left: 0;
-      width: 100%;
-      text-align: center;
-      font-size: 24px;
+      top: 92px;
+      left: 180px;
+      width: 640px;
+      height: 38px;
+      background: #181d3a; /* Matches image background tone */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+    }
+
+    .card-title-overlay {
+      font-size: 21px;
       font-weight: 800;
       color: #ffcc00;
       letter-spacing: 0.5px;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
     }
 
-    /* Precise Layout Grid for Pill Slots */
+    /* Grid layout aligned with Rank 1 starting at top slot */
     .grid-container {
       position: absolute;
-      top: 312px;
-      left: 128px;
+      top: 177px; /* Aligns perfectly with Rank 1 slot */
+      left: 126px;
       width: 760px;
       display: flex;
       gap: 72px;
@@ -94,15 +101,15 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 5.8px;
+      gap: 5.6px;
     }
 
     .row-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 22px;
-      padding: 0 18px 0 12px;
+      height: 22.5px;
+      padding: 0 16px 0 10px;
     }
 
     .student-name {
@@ -135,6 +142,8 @@
       <option value="Graphic Design">Graphic Design</option>
       <option value="Virtual Assistant">Virtual Assistant</option>
       <option value="Data Science">Data Science</option>
+      <option value="Founders Academy">Founders Academy</option>
+      <option value="Freelancer Academy">Freelancer Academy</option>
     </select>
 
     <button onclick="downloadImage()">📸 Download Image (PNG)</button>
@@ -142,7 +151,9 @@
 
   <!-- Graphic Leaderboard Card -->
   <div class="card" id="leaderboardCard">
-    <div class="card-title-overlay" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
+    <div class="title-patch">
+      <div class="card-title-overlay" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
+    </div>
     
     <div class="grid-container">
       <div class="column" id="leftCol"></div>
@@ -151,7 +162,7 @@
   </div>
 
   <script>
-    // Full Program Datasets
+    // Comprehensive Program Datasets including Founders & Freelancer Academies
     const programData = {
       "AiCE": [
         { name: "Amanuel Lulie W", class: "AICE-6_rolling" },
@@ -202,6 +213,18 @@
         { name: "KALEAB HAILE", class: "DS-2_rolling" },
         { name: "SARA TESFAYE", class: "DS-1_rolling" },
         { name: "BETSINAT KASSA", class: "DS-1_rolling" }
+      ],
+      "Founders Academy": [
+        { name: "YONAS ALEMU", class: "FA-2_rolling" },
+        { name: "BETHLEHEM TEKLE", class: "FA-2_rolling" },
+        { name: "KIDUS DANIEL", class: "FA-1_rolling" },
+        { name: "FREHIWOT GETACHEW", class: "FA-1_rolling" }
+      ],
+      "Freelancer Academy": [
+        { name: "SAMIYA HASSEN", class: "FLA-2_rolling" },
+        { name: "EZRA WORKU", class: "FLA-2_rolling" },
+        { name: "LULIT BEKELE", class: "FLA-1_rolling" },
+        { name: "ABRAHAM TADESSE", class: "FLA-1_rolling" }
       ]
     };
 
@@ -210,7 +233,7 @@
       const students = programData[selectedProg] || [];
       const totalCount = students.length;
 
-      // Update Card Header Title dynamically
+      // Update Card Title
       document.getElementById("cardTitle").innerText = `${selectedProg} Leaderboard - Meet the Current Top ${totalCount}!`;
 
       const leftCol = document.getElementById("leftCol");
@@ -247,7 +270,6 @@
       });
     }
 
-    // Initial render
     renderLeaderboard();
   </script>
 </body>
