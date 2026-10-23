@@ -146,6 +146,13 @@
     const PROGRAM_ALIASES = { "ai career essentials": "AiCE" };
     const SKIP_TABS = /raw|template|instructions/i;
 
+    // Classes left off the list for specific programs (first-level classes FA-1 / FLA-1).
+    // "(?!\\d)" stops FA-1 from also matching FA-10 or FA-12.
+    const EXCLUDE_CLASS = {
+      "founder academy":    /^FA-1(?!\d)/i,
+      "freelancer academy": /^FLA-1(?!\d)/i
+    };
+
     function programFromTab(tab) {
       const base = tab.split("_")[0].trim();
       return PROGRAM_ALIASES[base.toLowerCase()] || base;
@@ -208,7 +215,11 @@
             const headerRow = (rows[0] || []).map(h => String(h).toLowerCase());
             if (headerRow.some(h => h.includes("email"))) return;      // raw learner exports
             const result = parseSheet(rows, programFromTab(tab));
-            Object.entries(result).forEach(([prog, list]) => (parsed[prog] = (parsed[prog] || []).concat(list)));
+            Object.entries(result).forEach(([prog, list]) => {
+              const rule = EXCLUDE_CLASS[prog.toLowerCase()];
+              if (rule) list = list.filter(s => !rule.test(s.cls));
+              if (list.length) parsed[prog] = (parsed[prog] || []).concat(list);
+            });
           });
           if (!Object.keys(parsed).length) throw new Error('No student tabs found. Each tab needs a "Full Name" column.');
 
