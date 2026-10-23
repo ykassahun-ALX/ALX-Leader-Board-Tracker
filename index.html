@@ -53,7 +53,7 @@
       border-color: #2e9d45;
     }
 
-    /* Leaderboard Card Container */
+    /* Card Canvas */
     .card {
       width: 1000px;
       height: 562px;
@@ -66,18 +66,17 @@
       overflow: hidden;
     }
 
-    /* Clean Overlay covering the baked-in title */
+    /* Top Patch - Erases baked-in title and replaces cleanly */
     .title-patch {
       position: absolute;
-      top: 92px;
-      left: 180px;
-      width: 640px;
+      top: 135px;
+      left: 200px;
+      width: 600px;
       height: 38px;
-      background: #181d3a; /* Matches image background tone */
+      background-color: #1a1e43; /* Matches upper background dark blue */
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
     }
 
     .card-title-overlay {
@@ -87,14 +86,14 @@
       letter-spacing: 0.5px;
     }
 
-    /* Grid layout aligned with Rank 1 starting at top slot */
+    /* Grid alignment for pill slots */
     .grid-container {
       position: absolute;
-      top: 177px; /* Aligns perfectly with Rank 1 slot */
-      left: 126px;
+      top: 282px;
+      left: 128px;
       width: 760px;
       display: flex;
-      gap: 72px;
+      gap: 40px;
     }
 
     .column {
@@ -104,12 +103,23 @@
       gap: 5.6px;
     }
 
-    .row-item {
+    /* Left Column Items */
+    #leftCol .row-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       height: 22.5px;
       padding: 0 16px 0 10px;
+    }
+
+    /* Right Column Items - Shifted right so text sits AFTER badges 11-14 */
+    #rightCol .row-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 22.5px;
+      padding-left: 45px;
+      padding-right: 16px;
     }
 
     .student-name {
@@ -120,7 +130,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 200px;
+      max-width: 180px;
     }
 
     .class-tag {
@@ -128,6 +138,25 @@
       font-weight: 800;
       color: #00ff88;
       white-space: nowrap;
+    }
+
+    /* Footer Patch - Erases baked-in bottom text and replaces cleanly */
+    .footer-patch {
+      position: absolute;
+      bottom: 80px;
+      left: 230px;
+      width: 540px;
+      height: 32px;
+      background-color: #1a1e43;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .footer-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffcc00;
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -149,20 +178,25 @@
     <button onclick="downloadImage()">📸 Download Image (PNG)</button>
   </div>
 
-  <!-- Graphic Leaderboard Card -->
   <div class="card" id="leaderboardCard">
+    <!-- Top Title Overlay Patch -->
     <div class="title-patch">
       <div class="card-title-overlay" id="cardTitle">AiCE Leaderboard - Meet the Current Top 14!</div>
     </div>
     
+    <!-- Student Entries -->
     <div class="grid-container">
       <div class="column" id="leftCol"></div>
       <div class="column" id="rightCol"></div>
     </div>
+
+    <!-- Bottom Footer Patch -->
+    <div class="footer-patch">
+      <div class="footer-text" id="footerText">Who will climb into the top 14 next?</div>
+    </div>
   </div>
 
   <script>
-    // Comprehensive Program Datasets including Founders & Freelancer Academies
     const programData = {
       "AiCE": [
         { name: "Amanuel Lulie W", class: "AICE-6_rolling" },
@@ -231,10 +265,10 @@
     function renderLeaderboard() {
       const selectedProg = document.getElementById("programSelect").value;
       const students = programData[selectedProg] || [];
-      const totalCount = students.length;
+      const count = students.length;
 
-      // Update Card Title
-      document.getElementById("cardTitle").innerText = `${selectedProg} Leaderboard - Meet the Current Top ${totalCount}!`;
+      document.getElementById("cardTitle").innerText = `${selectedProg} Leaderboard - Meet the Current Top ${count}!`;
+      document.getElementById("footerText").innerText = `Who will climb into the top ${count} next?`;
 
       const leftCol = document.getElementById("leftCol");
       const rightCol = document.getElementById("rightCol");
