@@ -64,16 +64,18 @@
       background: #002b56; box-shadow: 0 1px 3px rgba(0,0,0,.35);
     }
     .badge {
-      position: absolute; left: 18.6px; top: calc(var(--h) * -0.065); width: 56px; height: var(--h);
+      position: absolute; left: var(--bl, 18.6px); top: calc(var(--h) * -0.065); width: var(--bw, 56px); height: var(--h);
       border-radius: calc(var(--h) / 2);
       background: #fbd437; color: #002b56; font-size: calc(var(--h) * 0.535); font-weight: 800;
       display: flex; align-items: center; justify-content: center; line-height: 1;
     }
-    .row.left  { left: 44.4px; width: 440.4px; }
-    .row.right { left: 503px;  width: 440.3px; }
     .student-name, .class-tag { position: absolute; top: 0; line-height: var(--h); height: var(--h); white-space: nowrap; }
-    .student-name { left: 81.6px; right: 125px; font-weight: 700; color: #fff; overflow: hidden; }
-    .class-tag    { right: 17.8px; font-size: calc(var(--h) * 0.51); font-weight: 700; color: #00ff88; }
+    .student-name { left: var(--nl, 81.6px); right: var(--nr, 125px); font-weight: 700; color: #fff; overflow: hidden; }
+    .class-tag    { right: var(--tr, 17.8px); font-size: calc(var(--h) * 0.51); font-weight: 700; color: #00ff88; }
+
+    /* Column headers on the green banner (drawn here so a third column can have its own) */
+    .colhead { position: absolute; top: 140px; height: 21px; line-height: 21px; color: #002b56; font-weight: 700;
+               font-size: 12.5px; white-space: nowrap; text-align: right; }
 
     /* Calibration overlay (never included in the download) */
     .guides .pill { outline: 1px dashed rgba(255, 0, 120, .8); }
@@ -101,25 +103,35 @@
   <div id="cards"></div>
 
   <script>
-    const PER_CARD = 28;       // 14 rows per column is the smallest readable size; more names continue on another card
+    const PER_CARD = 42;       // 3 columns x 14 rows is the smallest readable size; more names continue on another card
     const BASE_H = 21.5, TOP0 = 178.5, AREA = 270;   // pill height / first pill top / vertical space for pills (px, 1000x562 space)
-    // Pill tops measured from the original design for the standard 10-row layout; right column sits 2.2px lower
+    const HEAD_W = 173.7, HEAD_GAP = 18.5;           // width of the original "Currently in Short Course" text / its gap from the column's right edge
+    // Pill tops measured from the original design for the standard 10-row layout; the 2-column right side sits 2.2px lower
     const LEFT_TOPS  = [178.5, 204.8, 232.6, 260.4, 287.8, 315.6, 343.0, 371.1, 398.9, 427.0];
     const RIGHT_TOPS = LEFT_TOPS.map(y => y + 2.2);
 
     // Column layout for one card:
-    //  10 or fewer names : split evenly, standard row size
-    //  11-20 names       : left column fills to 10, the rest go right (standard row size)
-    //  21-28 names       : two equal columns; rows shrink so everything still fits the same space
+    //  up to 10 names : 2 columns, split evenly
+    //  11-20 names    : 2 columns, left fills to 10, the rest go right
+    //  21+ names      : 3 columns, filled left to right (rows shrink only beyond 10 per column)
     function layoutFor(n) {
-      const perCol = n <= 20 ? 10 : Math.ceil(n / 2);
-      const left = n <= 10 ? Math.ceil(n / 2) : Math.min(n, perCol);
-      return { perCol, left };
+      if (n <= 20) {
+        const left = n <= 10 ? Math.ceil(n / 2) : 10;
+        return { cols: 2, perCol: 10, counts: [left, n - left] };
+      }
+      const perCol = Math.ceil(n / 3);
+      const c1 = Math.min(n, perCol), c2 = Math.min(n - c1, perCol);
+      return { cols: 3, perCol, counts: [c1, c2, n - c1 - c2] };
     }
-    function rowGeometry(perCol, slot, isLeft) {
-      if (perCol <= 10) return { top: (isLeft ? LEFT_TOPS : RIGHT_TOPS)[slot], h: BASE_H };
+    // Horizontal position of each column (card is 1000px wide)
+    function colBox(cols, c) {
+      if (cols === 2) return { left: c === 0 ? 44.4 : 503, width: c === 0 ? 440.4 : 440.3 };
+      const w = 291.6; return { left: 44.4 + c * (w + 12), width: w };
+    }
+    function rowGeometry(cols, perCol, slot, c) {
+      if (perCol <= 10) return { top: (cols === 2 && c === 1 ? RIGHT_TOPS : LEFT_TOPS)[slot], h: BASE_H };
       const pitch = AREA / (perCol - 0.226), h = pitch * 0.774;
-      return { top: TOP0 + slot * pitch + (isLeft ? 0 : 2.2 * h / BASE_H), h };
+      return { top: TOP0 + slot * pitch, h };
     }
 
     // Demo data shown until a file is uploaded
@@ -241,7 +253,7 @@
           const total = Object.values(parsed).reduce((n, l) => n + l.length, 0);
           setStatus(
             `Imported ${total} students in ${Object.keys(parsed).length} program(s).` +
-            (multi.length ? ` ${multi.join(", ")} need more than one card (max ${PER_CARD} names per card).` : ""),
+            (multi.length ? ` ${multi.join(", ")} need more than one card (max ${PER_CARD} per card).` : ""),
             "ok"
           );
         } catch (err) {
@@ -277,19 +289,42 @@
       $("cards").appendChild(card);                 // attach first so text can be measured
       fitTitle(title);
 
-      const { perCol, left } = layoutFor(students.length);
-      students.forEach((s, i) => {
-        const isLeft = i < left;
-        const g = rowGeometry(perCol, isLeft ? i : i - left, isLeft);
+      const { cols, perCol, counts } = layoutFor(students.length);
+      let idx = 0;
+      for (let c = 0; c < cols; c++) {
+        const box = colBox(cols, c);
 
-        const row = el("row " + (isLeft ? "left" : "right"));
-        row.style.top = g.top + "px";
-        row.style.setProperty("--h", g.h + "px");
-        const name = el("student-name", s.name);
-        row.append(el("pill"), el("badge", startRank + i), name, el("class-tag", s.cls));
-        card.appendChild(row);
-        fitName(name, 12 * g.h / BASE_H);
-      });
+        // Column header on the banner, sized so it is exactly as wide as the original text
+        const head = el("colhead", "Currently in Short Course");
+        head.style.left = (box.left + box.width - HEAD_GAP - 300) + "px";
+        head.style.width = "300px";
+        card.appendChild(head);
+        const probe = el("colhead", head.textContent);
+        probe.style.cssText = "visibility:hidden;width:auto;left:0";
+        card.appendChild(probe);
+        const w = probe.getBoundingClientRect().width;
+        probe.remove();
+        if (w) head.style.fontSize = (12.5 * HEAD_W / w) + "px";
+
+        for (let slot = 0; slot < counts[c]; slot++, idx++) {
+          const s = students[idx];
+          const g = rowGeometry(cols, perCol, slot, c);
+          const row = el("row");
+          row.style.top = g.top + "px";
+          row.style.left = box.left + "px";
+          row.style.width = box.width + "px";
+          row.style.setProperty("--h", g.h + "px");
+          if (cols === 3) {                          // narrower columns: slimmer badge, tighter spacing
+            row.style.setProperty("--bl", "8px");  row.style.setProperty("--bw", "38px");
+            row.style.setProperty("--nl", "54px"); row.style.setProperty("--nr", "99px");
+            row.style.setProperty("--tr", "10px");
+          }
+          const name = el("student-name", s.name);
+          row.append(el("pill"), el("badge", startRank + idx), name, el("class-tag", s.cls));
+          card.appendChild(row);
+          fitName(name, 12 * g.h / BASE_H);
+        }
+      }
       return card;
     }
 
