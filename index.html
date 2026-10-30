@@ -55,25 +55,28 @@
     .title  { left: 151px; width: 760px; top: 56px; height: 66px; font-size: 28px; line-height: 1.15; text-wrap: balance; }
     .footer { left: 233px; width: 560px; top: 481px; height: 36px; font-size: 20px; white-space: nowrap; }
 
-    /* Pills are drawn here, so any number of rows (1-20) works. Measured from the original design. */
-    .row { position: absolute; height: 21.5px; }
+    /* Pills are drawn here, so any number of rows works. Row height (--h) is set per row in JS:
+       21.5px matches the original design and shrinks when a column needs more than 10 rows. */
+    #cards { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+    .row { position: absolute; height: var(--h); }
     .pill {
-      position: absolute; inset: 0; border-radius: 11px;
+      position: absolute; inset: 0; border-radius: calc(var(--h) / 2);
       background: #002b56; box-shadow: 0 1px 3px rgba(0,0,0,.35);
     }
     .badge {
-      position: absolute; left: 18.6px; top: -1.4px; width: 56px; height: 21.5px; border-radius: 11px;
-      background: #fbd437; color: #002b56; font-size: 11.5px; font-weight: 800;
+      position: absolute; left: 18.6px; top: calc(var(--h) * -0.065); width: 56px; height: var(--h);
+      border-radius: calc(var(--h) / 2);
+      background: #fbd437; color: #002b56; font-size: calc(var(--h) * 0.535); font-weight: 800;
       display: flex; align-items: center; justify-content: center; line-height: 1;
     }
     .row.left  { left: 44.4px; width: 440.4px; }
     .row.right { left: 503px;  width: 440.3px; }
-    .student-name, .class-tag { position: absolute; top: 0; line-height: 21.5px; height: 21.5px; white-space: nowrap; }
-    .student-name { left: 81.6px; right: 125px; font-size: 12px; font-weight: 700; color: #fff; overflow: hidden; }
-    .class-tag    { right: 17.8px; font-size: 11px; font-weight: 700; color: #00ff88; }
+    .student-name, .class-tag { position: absolute; top: 0; line-height: var(--h); height: var(--h); white-space: nowrap; }
+    .student-name { left: 81.6px; right: 125px; font-weight: 700; color: #fff; overflow: hidden; }
+    .class-tag    { right: 17.8px; font-size: calc(var(--h) * 0.51); font-weight: 700; color: #00ff88; }
 
     /* Calibration overlay (never included in the download) */
-    .card.guides .pill { outline: 1px dashed rgba(255, 0, 120, .8); }
+    .guides .pill { outline: 1px dashed rgba(255, 0, 120, .8); }
   </style>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -95,22 +98,29 @@
   </div>
   <div id="status">Upload your workbook: each tab is one program, with columns Full Name and Status.</div>
 
-  <div class="card" id="leaderboardCard">
-    <div class="title" id="cardTitle"></div>
-    <div id="rows"></div>
-    <div class="footer" id="footerText"></div>
-  </div>
+  <div id="cards"></div>
 
   <script>
-    const MAX_SLOTS = 20;      // 10 rows per column
-    const COL_ROWS  = 10;
-    // Pill tops measured from the original design (1000x562 space); right column sits 2.2px lower
+    const PER_CARD = 28;       // 14 rows per column is the smallest readable size; more names continue on another card
+    const BASE_H = 21.5, TOP0 = 178.5, AREA = 270;   // pill height / first pill top / vertical space for pills (px, 1000x562 space)
+    // Pill tops measured from the original design for the standard 10-row layout; right column sits 2.2px lower
     const LEFT_TOPS  = [178.5, 204.8, 232.6, 260.4, 287.8, 315.6, 343.0, 371.1, 398.9, 427.0];
     const RIGHT_TOPS = LEFT_TOPS.map(y => y + 2.2);
 
-    // How many names go in the left column.
-    // 11-20 names: left column fills to 10, the rest go right.  10 or fewer: split evenly so both columns stay balanced.
-    const leftCount = n => n > COL_ROWS ? COL_ROWS : Math.ceil(n / 2);
+    // Column layout for one card:
+    //  10 or fewer names : split evenly, standard row size
+    //  11-20 names       : left column fills to 10, the rest go right (standard row size)
+    //  21-28 names       : two equal columns; rows shrink so everything still fits the same space
+    function layoutFor(n) {
+      const perCol = n <= 20 ? 10 : Math.ceil(n / 2);
+      const left = n <= 10 ? Math.ceil(n / 2) : Math.min(n, perCol);
+      return { perCol, left };
+    }
+    function rowGeometry(perCol, slot, isLeft) {
+      if (perCol <= 10) return { top: (isLeft ? LEFT_TOPS : RIGHT_TOPS)[slot], h: BASE_H };
+      const pitch = AREA / (perCol - 0.226), h = pitch * 0.774;
+      return { top: TOP0 + slot * pitch + (isLeft ? 0 : 2.2 * h / BASE_H), h };
+    }
 
     // Demo data shown until a file is uploaded
     let programData = {
@@ -227,12 +237,12 @@
           populateDropdown(Object.keys(parsed)[0]);
           render();
 
-          const over = Object.entries(parsed).filter(([, l]) => l.length > MAX_SLOTS).map(([p]) => p);
+          const multi = Object.entries(parsed).filter(([, l]) => l.length > PER_CARD).map(([p]) => p);
           const total = Object.values(parsed).reduce((n, l) => n + l.length, 0);
           setStatus(
             `Imported ${total} students in ${Object.keys(parsed).length} program(s).` +
-            (over.length ? ` Only the first ${MAX_SLOTS} fit the template (${over.join(", ")}).` : ""),
-            over.length ? "error" : "ok"
+            (multi.length ? ` ${multi.join(", ")} need more than one card (max ${PER_CARD} names per card).` : ""),
+            "ok"
           );
         } catch (err) {
           setStatus(err.message || "Could not read that file.", "error");
@@ -243,11 +253,11 @@
     });
 
     /* ---------------- Rendering ---------------- */
-    function fitName(el) {
+    function fitName(el, start) {
       // Shrink long names a little instead of cutting them off
-      let size = 12;
+      let size = start;
       el.style.fontSize = size + "px";
-      while (el.scrollWidth > el.clientWidth && size > 8) { size -= 0.5; el.style.fontSize = size + "px"; }
+      while (el.scrollWidth > el.clientWidth && size > 6) { size -= 0.5; el.style.fontSize = size + "px"; }
     }
 
     function fitTitle(el) {
@@ -257,57 +267,69 @@
       while (el.scrollHeight > el.clientHeight && size > 16) { size -= 1; el.style.fontSize = size + "px"; }
     }
 
+    const el = (cls, text) => { const d = document.createElement("div"); d.className = cls; if (text !== undefined) d.textContent = text; return d; };
+
+    function buildCard(prog, total, students, startRank) {
+      const card = el("card");
+      const title = el("title", `${prog} Leaderboard\u00A0- Meet the Current Top ${total}!`);
+      const footer = el("footer", `Who will climb into the top ${total} next?`);
+      card.append(title, footer);
+      $("cards").appendChild(card);                 // attach first so text can be measured
+      fitTitle(title);
+
+      const { perCol, left } = layoutFor(students.length);
+      students.forEach((s, i) => {
+        const isLeft = i < left;
+        const g = rowGeometry(perCol, isLeft ? i : i - left, isLeft);
+
+        const row = el("row " + (isLeft ? "left" : "right"));
+        row.style.top = g.top + "px";
+        row.style.setProperty("--h", g.h + "px");
+        const name = el("student-name", s.name);
+        row.append(el("pill"), el("badge", startRank + i), name, el("class-tag", s.cls));
+        card.appendChild(row);
+        fitName(name, 12 * g.h / BASE_H);
+      });
+      return card;
+    }
+
     function render() {
       const prog = select.value;
-      const students = (programData[prog] || []).slice(0, MAX_SLOTS);
-      const n = students.length;
-      const nLeft = leftCount(n);
+      const all = programData[prog] || [];
+      const n = all.length;
+      const pages = Math.max(1, Math.ceil(n / PER_CARD));
+      const size = Math.ceil(n / pages);            // spread names evenly over the cards
 
-      $("cardTitle").textContent  = `${prog} Leaderboard\u00A0- Meet the Current Top ${n}!`;
-      $("footerText").textContent = `Who will climb into the top ${n} next?`;
-      fitTitle($("cardTitle"));
-
-      const host = $("rows");
-      host.innerHTML = "";
-
-      students.forEach((s, i) => {
-        const isLeft = i < nLeft;
-        const slot = isLeft ? i : i - nLeft;
-
-        const row = document.createElement("div");
-        row.className = "row " + (isLeft ? "left" : "right");
-        row.style.top = (isLeft ? LEFT_TOPS[slot] : RIGHT_TOPS[slot]) + "px";
-
-        const pill = document.createElement("div");  pill.className = "pill";
-        const badge = document.createElement("div"); badge.className = "badge"; badge.textContent = i + 1;
-        const name = document.createElement("div");  name.className = "student-name"; name.textContent = s.name;
-        const tag = document.createElement("div");   tag.className = "class-tag"; tag.textContent = s.cls;
-
-        row.append(pill, badge, name, tag);
-        host.appendChild(row);
-        fitName(name);
-      });
+      $("cards").innerHTML = "";
+      for (let p = 0; p < pages; p++) {
+        buildCard(prog, n, all.slice(p * size, (p + 1) * size), p * size + 1);
+      }
     }
 
     select.addEventListener("change", render);
-    $("guideToggle").addEventListener("change", e => $("leaderboardCard").classList.toggle("guides", e.target.checked));
+    $("guideToggle").addEventListener("change", e => $("cards").classList.toggle("guides", e.target.checked));
 
     /* ---------------- Download ---------------- */
     $("downloadBtn").addEventListener("click", async () => {
-      const card = $("leaderboardCard");
-      const wasGuides = card.classList.contains("guides");
-      card.classList.remove("guides");            // never export the guides
+      const wrap = $("cards");
+      const wasGuides = wrap.classList.contains("guides");
+      wrap.classList.remove("guides");              // never export the guides
       try {
         await document.fonts.ready;
-        const canvas = await html2canvas(card, { scale: 3, useCORS: true, backgroundColor: null });
-        const a = document.createElement("a");
-        a.download = `${select.value.replace(/[^\w-]+/g, "_")}_Leaderboard.png`;
-        a.href = canvas.toDataURL("image/png");
-        a.click();
+        const cards = [...wrap.querySelectorAll(".card")];
+        const base = select.value.replace(/[^\w-]+/g, "_") + "_Leaderboard";
+        for (let i = 0; i < cards.length; i++) {
+          const canvas = await html2canvas(cards[i], { scale: 3, useCORS: true, backgroundColor: null });
+          const a = document.createElement("a");
+          a.download = cards.length > 1 ? `${base}_${i + 1}of${cards.length}.png` : `${base}.png`;
+          a.href = canvas.toDataURL("image/png");
+          a.click();
+          await new Promise(r => setTimeout(r, 400));   // let the browser start each download
+        }
       } catch (err) {
         setStatus("Download failed. Open the page via GitHub Pages (not file://) so template.png can be read.", "error");
       } finally {
-        if (wasGuides) card.classList.add("guides");
+        if (wasGuides) wrap.classList.add("guides");
       }
     });
 
