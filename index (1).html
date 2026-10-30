@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALX Leaderboard Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px;
+    }
+
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center;
+      margin-bottom: 12px; background: #161b22; padding: 14px 22px; border-radius: 10px;
+      max-width: 1000px;
+    }
+    .controls label { font-weight: 600; color: #00ff88; font-size: 14px; }
+    .controls select, .controls button, .controls input[type="file"] {
+      padding: 8px 12px; border-radius: 6px; border: 1px solid #30363d;
+      background: #21262d; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .controls button:hover { background: #238636; border-color: #2e9d45; }
+    .controls .check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #c9d1d9; font-weight: 500; }
+
+    #status { min-height: 20px; margin-bottom: 14px; font-size: 13px; color: #8b949e; text-align: center; }
+    #status.error { color: #ff7b72; }
+    #status.ok { color: #00ff88; }
+
+    /* ---------- Card (1000 x 562, matches template.png) ---------- */
+    .card {
+      width: 1000px;
+      height: 562px;
+      flex: none;
+      background: #1a1e43 url('template.png') center / 1000px 562px no-repeat;
+      font-family: "Poppins", -apple-system, "Segoe UI", Arial, sans-serif;
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    /* template.png has NO title/footer text, so these are drawn directly (no cover-up patches) */
+    .title, .footer {
+      position: absolute; display: flex; align-items: center; justify-content: center;
+      color: #ffcc00; font-weight: 700; text-align: center; overflow: hidden;
+    }
+    /* Title wraps onto a second line when it is long (e.g. "Content Creation ...") */
+    .title  { left: 151px; width: 760px; top: 56px; height: 66px; font-size: 28px; line-height: 1.15; text-wrap: balance; }
+    .footer { left: 233px; width: 560px; top: 481px; height: 36px; font-size: 20px; white-space: nowrap; }
+
+    /* Pills are drawn here, so any number of rows (1-20) works. Measured from the original design. */
+    .row { position: absolute; height: 21.5px; }
+    .pill {
+      position: absolute; inset: 0; border-radius: 11px;
+      background: #002b56; box-shadow: 0 1px 3px rgba(0,0,0,.35);
+    }
+    .badge {
+      position: absolute; left: 18.6px; top: -1.4px; width: 56px; height: 21.5px; border-radius: 11px;
+      background: #fbd437; color: #002b56; font-size: 11.5px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; line-height: 1;
+    }
+    .row.left  { left: 44.4px; width: 440.4px; }
+    .row.right { left: 503px;  width: 440.3px; }
+    .student-name, .class-tag { position: absolute; top: 0; line-height: 21.5px; height: 21.5px; white-space: nowrap; }
+    .student-name { left: 81.6px; right: 125px; font-size: 12px; font-weight: 700; color: #fff; overflow: hidden; }
+    .class-tag    { right: 17.8px; font-size: 11px; font-weight: 700; color: #00ff88; }
+
+    /* Calibration overlay (never included in the download) */
+    .card.guides .pill { outline: 1px dashed rgba(255, 0, 120, .8); }
+  </style>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <div class="controls">
+    <label for="programSelect">Program:</label>
+    <select id="programSelect"></select>
+
+    <label for="excelFileInput">Spreadsheet:</label>
+    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv">
+
+    <label class="check"><input type="checkbox" id="guideToggle"> Show alignment guides</label>
+    <button id="downloadBtn">Download PNG</button>
+  </div>
+  <div id="status">Upload your workbook: each tab is one program, with columns Full Name and Status.</div>
+
+  <div class="card" id="leaderboardCard">
+    <div class="title" id="cardTitle"></div>
+    <div id="rows"></div>
+    <div class="footer" id="footerText"></div>
+  </div>
+
+  <script>
+    const MAX_SLOTS = 20;      // 10 rows per column
+    const COL_ROWS  = 10;
+    // Pill tops measured from the original design (1000x562 space); right column sits 2.2px lower
+    const LEFT_TOPS  = [178.5, 204.8, 232.6, 260.4, 287.8, 315.6, 343.0, 371.1, 398.9, 427.0];
+    const RIGHT_TOPS = LEFT_TOPS.map(y => y + 2.2);
+
+    // How many names go in the left column.
+    // 11-20 names: left column fills to 10, the rest go right.  10 or fewer: split evenly so both columns stay balanced.
+    const leftCount = n => n > COL_ROWS ? COL_ROWS : Math.ceil(n / 2);
+
+    // Demo data shown until a file is uploaded
+    let programData = {
+      "AiCE": [
+        { name: "Amanuel Lulie W", cls: "AICE-6_rolling" }, { name: "Asmare Getie", cls: "AICE-6_rolling" },
+        { name: "Bereket Yidneka", cls: "AICE-6_rolling" }, { name: "Bella Rosewood", cls: "AICE-6_rolling" },
+        { name: "Liya Nidaw", cls: "AICE-6_rolling" },      { name: "Martha Kifle", cls: "AICE-6_rolling" },
+        { name: "Rufeyda Hassen", cls: "AICE-6_rolling" },  { name: "Yeabsera Bekele", cls: "AICE-6_rolling" },
+        { name: "AMANUEL GETA", cls: "AICE-5_rolling" },    { name: "Biruktawit Kefele", cls: "AICE-5_rolling" },
+        { name: "Fuad Tesfaye", cls: "AICE-5_rolling" },    { name: "Natnael Fantaw", cls: "AICE-5_rolling" },
+        { name: "Rahel Asres", cls: "AICE-5_rolling" },     { name: "Zeamanuel Lega", cls: "AICE-5_rolling" }
+      ]
+    };
+
+    const $ = id => document.getElementById(id);
+    const select = $("programSelect");
+
+    function setStatus(msg, type = "") {
+      const el = $("status");
+      el.textContent = msg;
+      el.className = type;
+    }
+
+    function populateDropdown(selected) {
+      select.innerHTML = "";
+      Object.keys(programData).forEach(p => select.add(new Option(p, p)));
+      if (selected && programData[selected]) select.value = selected;
+    }
+
+    /* ---------------- Spreadsheet parsing ---------------- */
+    // Tab names look like "Data Analytics_Oct 23": keep the part before "_" as the program name.
+    // Add entries here to show a different label on the card.
+    const PROGRAM_ALIASES = { "ai career essentials": "AiCE" };
+    const SKIP_TABS = /raw|template|instructions/i;
+
+    // Classes left off the list for specific programs (first-level classes FA-1 / FLA-1).
+    // "(?!\\d)" stops FA-1 from also matching FA-10 or FA-12.
+    const EXCLUDE_CLASS = {
+      "founder academy":    /^FA-1(?!\d)/i,
+      "freelancer academy": /^FLA-1(?!\d)/i
+    };
+
+    function programFromTab(tab) {
+      const base = tab.split("_")[0].trim();
+      return PROGRAM_ALIASES[base.toLowerCase()] || base;
+    }
+
+    function findCol(headers, test, exclude = []) {
+      return headers.findIndex((h, i) => !exclude.includes(i) && test(h));
+    }
+
+    function parseSheet(rows, defaultProg) {
+      // Skip leading blank rows; first non-empty row is the header
+      const headerIdx = rows.findIndex(r => r && r.some(c => String(c ?? "").trim() !== ""));
+      if (headerIdx === -1) return {};
+
+      const headers = rows[headerIdx].map(h => String(h ?? "").trim().toLowerCase());
+      const rankCol = findCol(headers, h => /^(rank|position|#)$/.test(h));
+      const nameCol = findCol(headers, h => /name|student/.test(h));
+      const progCol = findCol(headers, h => /program|track|course/.test(h), [nameCol]);
+      const clsCol  = findCol(headers, h => /class|cohort|batch|status|code/.test(h), [nameCol, progCol]);
+
+      if (nameCol === -1) return {};
+
+      const currentProg = defaultProg || "Leaderboard";
+      const groups = {};      // lower-cased key -> { label, list }
+
+      rows.slice(headerIdx + 1).forEach((r, i) => {
+        const name = String(r?.[nameCol] ?? "").trim();
+        if (!name) return;
+        const prog = progCol !== -1 ? String(r[progCol] ?? "").trim() : "";
+        const label = prog || currentProg;
+        const key = label.toLowerCase();                       // "AiCE" and "AICE" merge
+        (groups[key] ??= { label, list: [] }).list.push({
+          name,
+          cls: clsCol !== -1 ? String(r[clsCol] ?? "").trim() : "",
+          rank: rankCol !== -1 ? parseFloat(r[rankCol]) : NaN,
+          order: i
+        });
+      });
+
+      const result = {};
+      Object.values(groups).forEach(({ label, list }) => {
+        // Sort by Rank column when present, otherwise keep sheet order
+        list.sort((a, b) => (isNaN(a.rank) || isNaN(b.rank)) ? a.order - b.order : a.rank - b.rank);
+        result[label] = list;
+      });
+      return result;
+    }
+
+    $("excelFileInput").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const wb = XLSX.read(new Uint8Array(ev.target.result), { type: "array" });
+          const parsed = {};
+          wb.SheetNames.forEach(tab => {
+            if (SKIP_TABS.test(tab)) return;
+            const rows = XLSX.utils.sheet_to_json(wb.Sheets[tab], { header: 1, defval: "", blankrows: false });
+            const headerRow = (rows[0] || []).map(h => String(h).toLowerCase());
+            if (headerRow.some(h => h.includes("email"))) return;      // raw learner exports
+            const result = parseSheet(rows, programFromTab(tab));
+            Object.entries(result).forEach(([prog, list]) => {
+              const rule = EXCLUDE_CLASS[prog.toLowerCase()];
+              if (rule) list = list.filter(s => !rule.test(s.cls));
+              if (list.length) parsed[prog] = (parsed[prog] || []).concat(list);
+            });
+          });
+          if (!Object.keys(parsed).length) throw new Error('No student tabs found. Each tab needs a "Full Name" column.');
+
+          programData = parsed;                       // replace demo/old data entirely
+          populateDropdown(Object.keys(parsed)[0]);
+          render();
+
+          const over = Object.entries(parsed).filter(([, l]) => l.length > MAX_SLOTS).map(([p]) => p);
+          const total = Object.values(parsed).reduce((n, l) => n + l.length, 0);
+          setStatus(
+            `Imported ${total} students in ${Object.keys(parsed).length} program(s).` +
+            (over.length ? ` Only the first ${MAX_SLOTS} fit the template (${over.join(", ")}).` : ""),
+            over.length ? "error" : "ok"
+          );
+        } catch (err) {
+          setStatus(err.message || "Could not read that file.", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      e.target.value = "";    // allows re-uploading the same file
+    });
+
+    /* ---------------- Rendering ---------------- */
+    function fitName(el) {
+      // Shrink long names a little instead of cutting them off
+      let size = 12;
+      el.style.fontSize = size + "px";
+      while (el.scrollWidth > el.clientWidth && size > 8) { size -= 0.5; el.style.fontSize = size + "px"; }
+    }
+
+    function fitTitle(el) {
+      // Wrap first (CSS); if it still doesn't fit in two lines, shrink
+      let size = 28;
+      el.style.fontSize = size + "px";
+      while (el.scrollHeight > el.clientHeight && size > 16) { size -= 1; el.style.fontSize = size + "px"; }
+    }
+
+    function render() {
+      const prog = select.value;
+      const students = (programData[prog] || []).slice(0, MAX_SLOTS);
+      const n = students.length;
+      const nLeft = leftCount(n);
+
+      $("cardTitle").textContent  = `${prog} Leaderboard\u00A0- Meet the Current Top ${n}!`;
+      $("footerText").textContent = `Who will climb into the top ${n} next?`;
+      fitTitle($("cardTitle"));
+
+      const host = $("rows");
+      host.innerHTML = "";
+
+      students.forEach((s, i) => {
+        const isLeft = i < nLeft;
+        const slot = isLeft ? i : i - nLeft;
+
+        const row = document.createElement("div");
+        row.className = "row " + (isLeft ? "left" : "right");
+        row.style.top = (isLeft ? LEFT_TOPS[slot] : RIGHT_TOPS[slot]) + "px";
+
+        const pill = document.createElement("div");  pill.className = "pill";
+        const badge = document.createElement("div"); badge.className = "badge"; badge.textContent = i + 1;
+        const name = document.createElement("div");  name.className = "student-name"; name.textContent = s.name;
+        const tag = document.createElement("div");   tag.className = "class-tag"; tag.textContent = s.cls;
+
+        row.append(pill, badge, name, tag);
+        host.appendChild(row);
+        fitName(name);
+      });
+    }
+
+    select.addEventListener("change", render);
+    $("guideToggle").addEventListener("change", e => $("leaderboardCard").classList.toggle("guides", e.target.checked));
+
+    /* ---------------- Download ---------------- */
+    $("downloadBtn").addEventListener("click", async () => {
+      const card = $("leaderboardCard");
+      const wasGuides = card.classList.contains("guides");
+      card.classList.remove("guides");            // never export the guides
+      try {
+        await document.fonts.ready;
+        const canvas = await html2canvas(card, { scale: 3, useCORS: true, backgroundColor: null });
+        const a = document.createElement("a");
+        a.download = `${select.value.replace(/[^\w-]+/g, "_")}_Leaderboard.png`;
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+      } catch (err) {
+        setStatus("Download failed. Open the page via GitHub Pages (not file://) so template.png can be read.", "error");
+      } finally {
+        if (wasGuides) card.classList.add("guides");
+      }
+    });
+
+    populateDropdown("AiCE");
+    render();
+  </script>
+</body>
+</html>
